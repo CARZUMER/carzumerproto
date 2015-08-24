@@ -1,0 +1,61 @@
+$def with(X)
+<h1>Values Now</h1>
+$X.Zip <br/>
+$X.DeliveryZip <br/>
+$X.Fico <br/>
+$X.Income <br/>
+$X.DebtService <br/>
+$X.isHomeowner <br/>
+$X.isCosigner <br/>
+$X.Cosigner <br/>
+$X.isTradeIn <br/>
+$X.TradeInValue <br/>
+$X.TradeInPayoff <br/>
+$X.UpfrontWant <br/>
+$X.UpfrontMax <br/>
+$X.MonthlyWant <br/>
+$X.MonthlyMax <br/>
+$X.TermWant <br/>
+
+<h1>Fill Out New Values (Blank for system guess)</h1>
+
+<form action="/" method="POST">
+    $X.Zip.Label: <input type="text" name="V1", value="$X.Zip.Value"><br/>
+    $X.DeliveryZip.Label: <input type="text" name="V2", value="$X.DeliveryZip.Value"><br/>
+    $X.Fico.Label: <input type="text" name="V3", value="$X.Fico.Value"><br/>
+    $X.Income.Label: <input type="text" name="V4", value="$X.Income.Value"><br/>
+    $X.DebtService.Label: <input type="text" name="V5", value="$X.DebtService.Value"><br/>
+    $X.isHomeowner.Label:	<input type="radio" name="V6", value="Y" 
+							$if X.isHomeowner.Value == "Y":
+								Checked
+							>Yes
+							<input type="radio" name="V6", value="N"
+							$if X.isHomeowner.Value == "N":
+								Checked
+							>No<br/>
+    $X.isCosigner.Label: 	<input type="radio" name="V7", value="Y"
+							$if X.isCosigner.Value == "Y":
+								Checked
+							>Yes
+							<input type="radio" name="V7", value="N"
+							$if X.isCosigner.Value == "N":
+								Checked
+							>No<br/>
+    $X.Cosigner.Label: <input type="text" name="V8", value="$X.Cosigner.Value"><br/>
+    $X.isTradeIn.Label:		<input type="radio" name="V9", value="Y"
+							$if X.isTradeIn.Value == "Y":
+								Checked
+							>Yes
+							<input type="radio" name="V9", value="N"
+							$if X.isCosigner.Value == "N":
+								Checked
+							>No<br/>
+    $X.TradeInValue.Label: <input type="text" name="V10", value="$X.TradeInValue.Value"><br/>
+    $X.TradeInPayoff.Label: <input type="text" name="V11", value="$X.TradeInPayoff.Value"><br/>
+    $X.UpfrontWant.Label: <input type="text" name="V12", value="$X.UpfrontWant.Value"><br/>
+    $X.UpfrontMax.Label: <input type="text" name="V13", value="$X.UpfrontMax.Value"><br/>
+    $X.MonthlyWant.Label: <input type="text" name="V14", value="$X.MonthlyWant.Value"><br/>
+    $X.MonthlyMax.Label: <input type="text" name="V15", value="$X.MonthlyMax.Value"><br/>
+    $X.TermWant.Label: <input type="text" name="V16", value="$X.TermWant.Value"><br/>
+    <input type="submit">
+</form>
