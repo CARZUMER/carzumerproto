@@ -8,6 +8,7 @@ This file contains the Prototype Project
 
 """
 from numpy import loadtxt
+from os.path import abspath, exists
 import web
 
 
@@ -42,9 +43,11 @@ G_MonthlyRound = 10
 G_TermWanted = 72
 
 
-TablesDirectory = "c:\Users\Dan\Documents\CarZumer\Prototype\Python"
-FnameZIP5toFICO3 = TablesDirectory + "\FICO3byZIP5_Model.csv"
-TemplatesDirectory = TablesDirectory + "\Prototype\templates/"
+#TablesDirectory = "c:\Users\Dan\Documents\CarZumer\Prototype\Python"
+#FnameZIP5toFICO3 = TablesDirectory + "\FICO3byZIP5_Model.csv"
+#TemplatesDirectory = TablesDirectory + "\Prototype\templates/"
+FnameZIP5toFICO3 = abspath('FICO3byZIP5_Model.csv')
+TemplatesDirectory = abspath('templates/')
 
 
 def strRound(v, multiple=1):
