@@ -1,5 +1,4 @@
-# carzumerproto
-# /opt/www/carzumerproto
+# carzumerproto - /opt/www/carzumerproto
 
 1. Make sure that basic python tools are installed
 
