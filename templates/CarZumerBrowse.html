@@ -1,0 +1,538 @@
+$def with(X, MyFilters, MySelections)
+<!-- This file, written in Web.py, displays the main browsing screen for the CarZumer web site -->
+
+$code:
+	FocusOnFilters = False
+	for FilterName in MyFilters.Filter:
+		FocusOnFilters = FocusOnFilters or MyFilters.Filter[FilterName].isFocus
+	ImagesDirectory = "static/images/" 
+	FocusOnFilters = False
+	for FilterName in MyFilters.Filter:
+		FocusOnFilters = FocusOnFilters or MyFilters.Filter[FilterName].isFocus
+
+	def float0(sNumber):
+		if sNumber == "": return 0
+		return float(sNumber)
+
+	DownWant = float0(X.UpfrontWant.Value)
+	DownMax = float0(X.UpfrontMax.Value)
+	MonthlyWant = float0(X.MonthlyWant.Value)
+	MonthlyMax = float0(X.MonthlyMax.Value)
+	
+	SalesTaxRate = float0(X.TaxRate.Value) * 100
+	
+	Deals5 = [
+				('Down0', 'Monthly0', 'APR0', 'Deal0'),
+				('Down1', 'Monthly1', 'APR1', 'Deal1'),
+				('Down2', 'Monthly2', 'APR2', 'Deal2'),
+				('Down3', 'Monthly3', 'APR3', 'Deal3'),
+				('Down4', 'Monthly4', 'APR4', 'Deal4'),
+				('Down5', 'Monthly5', 'APR5', 'Deal5')
+			]
+	ListDetails = ['Color', 'DistanceMiles', 'VIN']
+	ModalDetails = ['VIN', 'YEAR', 'MAKE', 'Model', 'Trim', 'Color',
+					'DealerZip', 'DistanceMiles', 'TransportCost', 
+					'SellingPrice', 'SalesTax', 'CashCost', 'Invoice']
+
+<form action="/" method="POST" role="form" class="form-horizontal">
+
+<!-- ************************************************************************ -->
+<!-- Put details of incoming data fields into this collapsable zone           -->
+<!--       Used mainly for debugging and code development, but also deoms	  -->
+<!-- ************************************************************************ -->
+<div class="container">
+	<a href="#ValuesNow" class="btn btn-info" data-toggle="collapse">See How Defaults Are Computed</a>
+	<div id="ValuesNow" class="collapse">
+		<h2> Consumer Details </h2>
+		$X.Zip <br/>
+		$X.Fico <br/>
+		$X.Income <br/>
+		$X.DebtService <br/>
+		$X.isHomeowner <br/>
+		$X.isCosigner <br/>
+		$X.Cosigner <br/>
+		$X.isTradeIn <br/>
+		$X.TradeInValue <br/>
+		$X.TradeInPayoff <br/>
+		$X.UpfrontWant <br/>
+		$X.UpfrontMax <br/>
+		$X.MonthlyWant <br/>
+		$X.MonthlyMax <br/>
+		$X.TermWant <br/>
+		$X.Latitude <br/>
+		$X.Longitude <br/>
+		$X.TaxRate <br/>
+		<hr>
+		<h2> Checked Filters </h2>
+		$for OneFilter in WebSort(MyFilters.Filter):
+			$MyFilters.Filter[OneFilter] <br/>
+		<hr>
+		<h2> Vehicles Selected Through Hard Filter </h2>
+		$for OneSelection in MySelections.HardVehicles:
+			$OneSelection <br/>
+		<hr>
+		<h2> Vehicles Selected Through Soft Filter </h2>
+		$for OneSelection in MySelections.SoftVehicles:
+			$OneSelection <br/>
+		<br/>
+	</div>
+</div>
+
+
+<div class="container">
+	<div class="row">
+		<!-- ************************************************************************ -->
+		<!-- The next section provides an interactive data entry / guess disclosure   -->
+		<!--    of consumer details ("Your Budget," "Your Credit," and "Your TradeIn" -->
+		<!-- ************************************************************************ -->
+		<div class="col-md-4" style="border: 1px #e4e4e4 solid">
+			
+			<div class="form-group">
+			
+				$code:
+					XV = [	
+							(X.Zip,			"Zip", 			"Red"),
+							("Header",		"Your Budget",	""),
+							(X.UpfrontWant,	"UpfrontWant",	""),
+							(X.UpfrontMax,	"UpfrontMax",	""),
+							(X.MonthlyWant,	"MonthlyWant",	""),
+							(X.MonthlyMax,	"MonthlyMax",	""),
+							(X.TermWant,	"TermWant",		""), 
+							("Header",		"Your Credit",	""),
+							("Button",		"Score Me Now",	"ScoreModal"),
+							(X.Fico,		"Fico",			""),
+							(X.Income,		"Income",		""),
+							(X.DebtService,	"DebtService",	""),
+							(X.isHomeowner,	"isHomeowner",	"Radio"),
+							(X.isCosigner,	"isCosigner",	"Radio"),
+							(X.Cosigner,	"Cosigner",		""),
+							("Header",		"Your Trade-In",""),
+							(X.isTradeIn,	"isTradeIn",	"Radio"),
+							("Button",		"Price my Trade-In","TradeInModal"),
+							(X.TradeInValue,"TradeInValue",	""),
+							(X.TradeInPayoff,"TradeInPayoff","")
+						]
+				
+				$for XX, VV, RR in XV:				
+					$if XX == "Header":
+						<h3>$VV</h3>
+					$elif XX == "Button":
+						<a href="#" class="btn btn-info" role="button" data-toggle="modal" data-target="#$RR">$VV</a>
+					$elif RR == "Radio":
+						<div class="row" >
+							<div class="col-md-8" align="right" >
+								<h5><b>$XX.Label</b></h5></div>
+							<div class="col-md-4"><div class="radio">
+								<label><input type="radio" name="$VV" value="Y" onchange="this.form.submit()"
+									$if XX.Value == "Y":
+										Checked
+									>Yes</label>
+									<label><input type="radio" name="$VV" value="N" onchange="this.form.submit()"
+									$if XX.Value == "N":
+										Checked
+									>No   </label>
+							</div></div>
+						</div>						
+					$elif XX.isGuess:
+						<input type="text" class="form-control" name="$VV" onchange="this.form.submit()"
+							$if RR != "":
+								style=" border: 3px $RR solid;"
+							$if XX.isFocus:
+								autofocus
+							placeholder = "$XX.Label ($XX.Value)">
+					$else:
+						<div class="row" >
+							<div class="col-md-8" align="right" >
+								<h5><b>$XX.Label</b></h5></div>
+							<div class="col-md-4">
+								<input type="text" class="form-control" name="$VV" onchange="this.form.submit()"
+									style=" background-color: Lime;" value = "$XX.Value">
+							</div>
+						</div>		  
+			</div>			
+			
+			<button type="submit" class="btn btn-default">Submit</button>
+			<button type="reset" class="btn btn-default">Reset</button>
+		</div>
+		
+		
+		<!-- SCORE ME NOW Modal -->
+		<div class="modal fade" id="ScoreModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+						<h2 class="modal-title" id="myModalLabel">SCORE ME NOW</h2>
+					</div>
+					<div class="modal-body">
+						<h4> Interactive display to generate a soft credit bureau hit and populate the FICO field </h4>
+					</div><!-- /.modal-body -->
+				</div><!-- /.modal-content -->
+			</div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
+		
+		<!-- VALUE MY TRADE-IN Modal -->
+		<div class="modal fade" id="TradeInModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+						<h2 class="modal-title" id="myModalLabel">VALUE MY TRADE-IN</h2>
+					</div>
+					<div class="modal-body">
+						<h4> Interactive display to generate a Trade-In valuation and populate the TradeInValue field </h4>
+					</div><!-- /.modal-body -->
+				</div><!-- /.modal-content -->
+			</div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
+				
+		<!-- ************************************************************************ -->
+		<!-- This section creates the 8 filter menues.  Each menu, when clicked,      -->
+		<!--       opens a modal with available checkboxes							  -->
+		<!-- ************************************************************************ -->	
+		<div class="col-md-8" style="border: 1px #e4e4e4 solid">
+			<div class="container" style="border: 1px #e4e4e4 solid">
+				<div class="row">
+					$for FilterName in WebSort(MyFilters.Filter):
+						<div class="col-md-1">
+							<div class="button-group">
+								<button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#myModal$FilterName">
+									$FilterName[1:]
+									<span class="caret"></span>
+								</button>
+								<div class="modal fade" id="myModal$FilterName" tabindex="-1" role="dialog" aria-labelledby="myModalLabel$FilterName" aria-hidden="true">
+									<div class="modal-dialog">
+										<div class="modal-content">
+											<div class="modal-header">
+												<button type="button" class="close" data-dismiss="modal">&times;</button>
+												<h2 class="modal-title">Select $FilterName[1:]</h2>
+												<a href="#" class="small" tabIndex="-1">
+													<input type="checkbox" name="AllCheckList" onchange="this.form.submit();"/
+														value="$FilterName">
+														&nbsp;Select All &nbsp;&nbsp;&nbsp;&nbsp;
+													<input type="checkbox" name="ClearCheckList" onchange="this.form.submit();"/
+														value="$FilterName">
+														&nbsp;Clear All
+												</a>
+											</div>
+											
+											<div class="modal-body">
+												<div class="col-md-12" style="border: 4px #e4e4e4 solid">
+													<div class="row">
+														$for AvailableChoice in WebSort(MyFilters.Filter[FilterName].Choices.keys()):
+															<div class="col-md-3" 
+																	$if FilterName[1:] == "Color":
+																		style="background-color: $AvailableChoice;"
+																	>
+																<a href="#" class="small" tabIndex="-1"
+																	$if FilterName[1:] == "Color" and AvailableChoice in ["Red", "Black", "Gray", "Blue", "Brown"]:
+																			style="color: white"
+																	$if FilterName[1:] == "Color" and AvailableChoice in ["Silver", "White"]:
+																			style="color: black"
+																	>
+																	<input type="checkbox" name="DetailedCheckList"/
+																		value="$FilterName $AvailableChoice"/
+																		$if MyFilters.Filter[FilterName].Choices[AvailableChoice]:
+																			Checked
+																	> $AvailableChoice
+																</a>
+															</div>
+														<div class="col-md-3"
+																$if FilterName[1:] == "Color":
+																	style="background-image: linear-gradient(90deg, yellow, green)"
+																>
+															<a href="#" class="small" tabIndex="-1">
+																<input type="checkbox" name="OtherCheckList"/
+																	value="$FilterName"/
+																	$if MyFilters.Filter[FilterName].isOther:
+																		Checked
+																> &nbsp; Other <br/>
+															</a>
+														</div>
+													</div>
+												</div>
+												<div class="row"></div>												
+												<div class="container" >
+													<div class="pull-left">
+														<button type="submit" class="btn btn-default" align="left" >Go</button>
+														&nbsp;&nbsp;&nbsp;&nbsp;<button type="reset" class="btn btn-default">Reset</button>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>					
+				</div>
+			</div>					
+				
+			<!-- ************************************************************************ -->
+			<!-- This section provides curated selections: Two (now, later three) rows    -->
+			<!--       of available vehicles represented as thumbnails linked to modals   -->
+			<!-- ************************************************************************ -->	
+			<div class="container" style="border: 1px #e4e4e4 solid">
+				<h2>Curated Selections</h2>
+				$for (VehiclesRow, RowLabel) in [(MySelections.HardVehicles, "Your Selections"), (MySelections.SoftVehicles, "Additional Suggestions")]:
+					<div class="row">
+						<h4>$RowLabel</h4>
+						$for OneVehicle in VehiclesRow:
+							<div class="col-md-2" style="border: 1px #e4e4e4 solid">
+								$code:																
+									ListedPrice = int(float0(OneVehicle.Properties['SellingPrice']))
+									InvoicePrice = int(float0(OneVehicle.Properties['Invoice']))
+									if ListedPrice == 0:
+										SellingPrice = InvoicePrice
+									else:
+										SellingPrice = ListedPrice
+									if InvoicePrice == 0:
+										InvoicePrice = ListedPrice
+									TradeIn = int(float0(OneVehicle.Properties['TradeIn']))
+									Payoff = int(float0(OneVehicle.Properties['Payoff']))
+									TransportCost = int(float0(OneVehicle.Properties['TransportCost']))
+									TransportMiles = int(float0(OneVehicle.Properties['DistanceMiles']))
+									SalesTax = int(float0(OneVehicle.Properties['SalesTax']))
+									CashCost = int(float0(OneVehicle.Properties['CashCost']))
+									CashBuy = CashCost - TradeIn + Payoff
+									
+									if len(OneVehicle.Properties['Make_STD'])>0 and len(OneVehicle.Properties['Model_STD'])>0:
+										ImageFileName = ImagesDirectory + OneVehicle.Properties['Make_STD'] + "(" + OneVehicle.Properties['Model_STD'] + ").jpg"
+									else:
+										ImageFileName = ImagesDirectory + "carpic.jpg"
+									BoxColor = OneVehicle.Properties['Color']
+									VIN = OneVehicle.Properties['VIN']
+									TITLE = OneVehicle.Properties['YEAR'] + " " + OneVehicle.Properties['MAKE'] + " " + OneVehicle.Properties['Model'] + " " + OneVehicle.Properties['Trim']
+								<img src="$ImageFileName" style="width:125px; height:90px; border:5px $BoxColor solid" data-toggle="modal" data-target="#myModal$VIN" >
+								
+								<!-- VEHICLE DETAILS Modal -->
+								<div class="modal fade" id="myModal$VIN" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+									<div class="modal-dialog">
+										<div class="modal-content">
+											<div class="modal-header">
+												<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+												<h2 class="modal-title" id="myModalLabel">$TITLE</h2>
+											</div>
+											<div class="modal-body">
+												<div class="row">
+													<div class="col-md-8" style="border: 1px #e4e4e4 solid">
+														<img src="$ImageFileName" style="width:375px; height:270px; border: 15px $BoxColor solid">
+													</div>
+													<div class="col-md-4" style="border: 1px #e4e4e4 solid">
+														<h3>SPACE FOR MORE LATER</h3>
+														<hr>
+														<h5> To be filled with more later</h5>
+													</div>
+												</div>
+												<div class="row">
+													<div class="col-md-4" style="border: 1px #e4e4e4 solid">
+														<h3>VEHICLE DETAILS</h3>
+														<hr>
+														$for OneProperty in ModalDetails:
+															<p><h6>${OneProperty}: $OneVehicle.Properties[OneProperty]</h6></p>
+													</div>
+													<div class="col-md-8" style="border: 1px #e4e4e4 solid">
+														<div class="row">
+															<h3>BUY IT NOW</h3>
+														</div>
+														$for (Downx, Monthlyx, APRx, Dealx) in Deals5:
+															$code:
+																sDown = OneVehicle.Properties[Downx]
+																sMonthly = OneVehicle.Properties[Monthlyx]
+																sAPR = OneVehicle.Properties[APRx]
+																Monthly = int(float0(sMonthly))
+																APR = "%.2f" % (float0(sAPR)*100)
+																CashDownPayment = int(float0(sDown))
+																TotalDownPayment = CashDownPayment + TradeIn - Payoff
+																LoanAmount = int(float0(OneVehicle.Properties['CashCost']) - TotalDownPayment)
+																if InvoicePrice == 0:
+																	Advance = "Bad Data"
+																else:
+																	Advance = int(LoanAmount *100 / InvoicePrice)
+																
+																if (CashDownPayment < 0) or (Monthly < 0) or (sDown == "") or (sMonthly == ""):
+																	DealColor = "none"
+																elif (CashDownPayment <= DownWant) and (Monthly <= MonthlyWant):
+																	DealColor = "green"
+																	TextColor = "white"
+																elif (CashDownPayment <= DownMax) and (Monthly <= MonthlyMax):
+																	DealColor = "yellow"
+																	TextColor = "black"
+																else:
+																	DealColor = "red"
+																	TextColor = "white"
+															$if Dealx == "Deal0":
+																<div class="row">
+																	<a href="#" class="btn btn-info btn-block" role="button"
+																				data-toggle="modal" data-target="#myModal${VIN}$Dealx" >
+																		$$$CashBuy&nbsp;Cash</a>
+																</div>
+															$elif (DealColor != "none"):
+																<div class="row">
+																	<a href="#" class="btn btn-info btn-block" 
+																		style="background-color: $DealColor; color: $TextColor" role="button"
+																		 data-toggle="modal" data-target="#myModal${VIN}$Dealx" >
+																		<h6>$$$sDown&nbsp;Down,&nbsp;&nbsp;&nbsp;
+																		$$${sMonthly}/Month,&nbsp;&nbsp;
+																		$X.TermWant.Value&nbsp;Months&nbsp;&nbsp;
+																		(${APR}% APR)</h6></a>
+																</div>	
+
+															<!-- Deal DETAILS Modal -->
+															<div class="modal fade" id="myModal${VIN}$Dealx" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+																<div class="modal-dialog">
+																	<div class="modal-content">
+																		<div class="modal-header">
+																			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+																			<h2 class="modal-title" id="myModalLabel">Deal Details</h2>
+																		</div>
+																		<div class="modal-body">
+																			<div class="row">
+																				<div class="col-md-8" style="border: 1px #e4e4e4 solid">
+																					<img src="$ImageFileName" style="width:375px; height:270px; border: 15px $BoxColor solid">
+																				</div>
+																				<div class="col-md-4" style="border: 1px #e4e4e4 solid">
+																					<h3>BUY IT NOW</h3>
+																					<hr>
+																					$if Dealx == "Deal0":
+																						<a href="#" class="btn btn-info btn-block" role="button" >
+																							$$$CashBuy&nbsp;Cash</a>
+																					$else:
+																						<a href="#" class="btn btn-info btn-block" 
+																							style="background-color: $DealColor; color: $TextColor" role="button" >
+																							<h6>$$$sDown&nbsp;Down</h6>
+																							<h6>$$${sMonthly}/Month</h6>
+																							<h6>$X.TermWant.Value&nbsp;Months</h6>
+																							<h6>(${APR}% APR)</h6></a>
+																				</div>
+																			</div>
+																			$if Dealx == "Deal0":
+																				<div class="row">
+																					<div class="col-md-12" style="border: 1px #e4e4e4 solid">																				
+																						<h5>Selling Price: $$$SellingPrice </h5>
+																						<h5> + Transport Cost: $$$TransportCost ($TransportMiles miles) </h5>
+																						<h5> + Sales Tax: $$$SalesTax (${SalesTaxRate}%) </h5>
+																						<hr>
+																						<h5> Total Cash Cost: $$$CashCost </h5>
+																						<hr>
+																						<h5> - TradeIn Value: $$$TradeIn </h5>
+																						<h5> + TradeIn Payoff: $$$Payoff  </h5>
+																						<hr>
+																						<h5> Cash Required: $$$CashBuy  </h5>
+																					</div>
+																				</div>
+																			$else:
+																				<div class="row">
+																					<div class="col-md-6" style="border: 1px #e4e4e4 solid">																				
+																						<h5>Selling Price: $$$SellingPrice </h5>
+																						<h5> + Transport Cost: $$$TransportCost ($TransportMiles miles) </h5>
+																						<h5> + Sales Tax: $$$SalesTax (${SalesTaxRate}%) </h5>
+																						<hr>
+																						<h5> Total Cash Cost: $$$CashCost </h5>
+																					</div>
+																					<div class="col-md-6" style="border: 1px #e4e4e4 solid">
+																						<h5> Cash Down Payment: $$$CashDownPayment </h5>
+																						<h5> + TradeIn Value: $$$TradeIn </h5>
+																						<h5> - TradeIn Payoff: $$$Payoff  </h5>
+																						<hr>
+																						<h5> - Total Down Payment: $$$TotalDownPayment  </h5>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-md-12" style="border: 1px #e4e4e4 solid">
+																						<h5><bold> Loan Amount:  $$$LoanAmount </bold></h5>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-md-8" style="border: 1px #e4e4e4 solid">
+																						<h5> Invoice:  $$$InvoicePrice </h5>
+																						<h5> Advance:  ${Advance}%  ( = $$$LoanAmount / $$$InvoicePrice ) </h5>
+																					</div>
+																					<div class="col-md-2" style="border: 1px #e4e4e4 solid">
+																						<h5> Fico:  $OneVehicle.Properties['Fico'] </h5>
+																					</div>
+																					<div class="col-md-2" style="border: 1px #e4e4e4 solid">
+																						<h5> Term:  $OneVehicle.Properties['TermWant'] </h5>
+																					</div>
+																				</div>
+																				<div class="row">
+																					<div class="col-md-6" style="border: 1px #e4e4e4 solid">
+																						<h5> APR (from price grid) :${APR}% </h5>
+																					</div>
+																					<div class="col-md-6" style="border: 1px #e4e4e4 solid">
+																						<h5> Monthly Payment:  $$$OneVehicle.Properties[Monthlyx] </h5>
+																					</div>
+																				</div>																	
+																		</div><!-- /.modal-body -->
+																	</div><!-- /.modal-content -->
+																</div><!-- /.modal-dialog -->
+															</div><!-- /.modal -->
+															
+													</div>
+												</div>
+											</div><!-- /.modal-body -->
+										</div><!-- /.modal-content -->
+									</div><!-- /.modal-dialog -->
+								</div><!-- /.modal -->
+				
+								<h6>$TITLE</h6>
+								$for OneProperty in ListDetails:
+									<p><h6><small> ${OneProperty}: $OneVehicle.Properties[OneProperty]</small></h6></p>
+								<a href="#" class="btn btn-info btn-block" role="button" style="border: 1px black solid" 
+											data-toggle="modal" data-target="#myModal${VIN}" >
+									<div class="row"><font size="2px">
+										<div class="col-md-4">Buy</div>
+										<div class="col-md-8" style="border: 1px #e4e4e4 solid">
+											$$$CashBuy&nbsp;
+										</div>
+									</font></div>
+								</a>
+								<!-- Find the best finance deal possible  -->
+								<!-- 1st choice: Down=Want, Monthly<=Want -->
+								<!-- 2nd choice: Monthly=Want, Down<=Max  -->
+								<!-- 3rd choice: Down=Max 				  -->
+								$code:
+									Best = 10
+									for (Downx, Monthlyx, APRx, Dealx) in Deals5:
+										sDown = OneVehicle.Properties[Downx]
+										sMonthly = OneVehicle.Properties[Monthlyx]
+										Down = float0(sDown)
+										Monthly = float0(sMonthly)
+										
+										if (Down < 0) or (Monthly < 0) or (sDown == "") or (sMonthly == ""):
+											pass
+										elif (Down <= DownWant) and (Monthly <= MonthlyWant):
+											Best = 1
+											BestMonthly = sMonthly
+											Bestx = Dealx
+										elif (Down <= DownMax) and (Monthly <= MonthlyWant) and (Best>2):
+											Best = 2
+											BestMonthly = sMonthly
+											Bestx = Dealx
+										elif (Down <= DownMax) and (Monthly <= MonthlyMax) and (Best>3):
+											Best = 3
+											BestMonthly = sMonthly
+											Bestx = Dealx
+										elif (Down <= DownMax) and (Best>4):
+											Best = 4
+											BestMonthly = sMonthly
+											Bestx = Dealx	
+								
+								$if (Best <= 4):
+									<a href="#" class="btn btn-info btn-block text-left" role="button" style="border: 1px black solid"
+										data-toggle="modal" data-target="#myModal${VIN}" >
+										<div class="row"><font size="2px">
+											<div class="col-md-4">Buy</div>
+											<div class="col-md-8" style="border: 1px #e4e4e4 solid">
+												$$$BestMonthly/Month
+											</div>
+										</font></div>
+									</a>							
+							</div>
+					</div> 
+			</div>
+		</div>
+	</div>
+</div>
+
+
+</form>
