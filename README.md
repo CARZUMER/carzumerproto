@@ -1,4 +1,4 @@
-# carzumerproto - /opt/www/carzumerproto
+#Carzumerproto - /opt/www/carzumerproto
 
 1. Make sure that basic python tools are installed
 
@@ -32,7 +32,7 @@
 
 
 
-Other configuration:
+#Other configuration:
 
 Install supervisor and configure it to work with gunicorn
 
@@ -78,11 +78,11 @@ To restart nginx:
 
 To check the logs:
 
- tail -100 /opt/www/carzumerproto/logs/gunicorn_supervisor.log
- sudo tail -100 /var/log/supervisor/supervisord.log 
+    tail -100 /opt/www/carzumerproto/logs/gunicorn_supervisor.log
+    sudo tail -100 /var/log/supervisor/supervisord.log 
  
- sudo  tail /var/log/nginx/carzumerproto-access.log 
- sudo  tail /var/log/nginx/error.log 
+    sudo  tail /var/log/nginx/carzumerproto-access.log 
+    sudo  tail /var/log/nginx/error.log 
  
  
 
