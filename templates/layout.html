@@ -1,0 +1,86 @@
+$def with (content)
+
+$code:	
+	LogosDirectory = "static/logos/"
+	CarZumerLogo = LogosDirectory + "CarZumer_Logo.JPG"
+	
+<html>
+    <head>
+        <title>CarZumer Consumer Portal Prototype</title>
+        <link rel="shortcut icon" href="/static/favicon.png" type="image/x-icon">
+        <link rel="icon" href="/static/favicon.png" type="image/x-icon">
+
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+		<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+		<link rel="stylesheet" href="static/Prototype.css">
+    </head>
+	
+	<body >
+		
+		<div class="container" >
+			<div class="pull-left">
+				<img src="${CarZumerLogo}" style="border:1px gray solid" data-toggle="modal" data-target="#myLogoModal" >
+			</div>
+			<div class="pull-left">
+				<ul class="nav nav-tabs">
+				  <li class="active"><a href="#">Browse</a></li>
+				  <li><a href="#">Finance</a></li>
+				  <li><a href="#">Trade-In</a></li>
+				</ul>
+			</div>
+			<!-- Modal -->
+			<div class="modal fade" id="myLogoModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+							<h2 class="modal-title" id="myModalLabel">CarZumer</h2>
+						</div>
+						<div class="modal-body">
+							<h4> All sort of introductory and disclosure information can come here </h4>
+						</div><!-- /.modal-body -->
+					</div><!-- /.modal-content -->
+				</div><!-- /.modal-dialog -->
+			</div><!-- /.modal -->
+			<div class="pull-right">
+				<ul class="nav nav-tabs">
+				  <li><a href="#">Log In</a></li>
+				  <li><a href="#">Terms of Service</a></li>
+				  <li><a href="#">Help</a></li>
+				</ul>
+			</div>
+		</div>
+		
+	$:content
+
+		<div class="learn-more">
+		  <div class="container">
+			<div class="row">
+			  <div class="col-md-4">
+				<h3>Buy</h3>
+				<p>Best Deals from 2500 Dealers.</p>
+				<p><a href="#">See how to buy</a></p>
+			  </div>
+			  <div class="col-md-4">
+				<h3>Finance</h3>
+				<p>Fund decision on the spot.</p>
+				<p><a href="#">Learn more about credit</a></p>
+			  </div>
+			  <div class="col-md-4">
+				<h3>Trade-In</h3>
+				<p>Online valuation, curbside inspection.</p>
+				<p><a href="#">Learn about Trade-In</a></p>
+			  </div>
+			</div>
+		  </div>
+		</div>
+
+		
+		
+		
+	</body>
+</html>
