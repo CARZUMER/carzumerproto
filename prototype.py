@@ -9,32 +9,27 @@ This file contains the Prototype Project
 Protocol to upload to PythonAnywhere
 ------------------------------------
 
-1. In origin machine, zip the static and templates directories together
+1. In origin machine, zip together the static and templates directories and
+    the file Prototype_Main.py
     Name the zipped file "Prototype.zip" (replacing any prior such file)
 2. Go to PythonAnywhere login page:  https://www.pythonanywhere.com/login/
-3. USERNAME = dshoham@carzumer.com  /  PASSWORD = carzumer
-4. Click FILES (top left)
-5. Upload the files Prototype_Main.py and Prototype.zip from the main directory
-6. Click on the link for the file Prototype_Main.py (low middle)
-    An editor will open, with the file
-7. Scroll to the bottom of the file and find this line (about 8 lines from the bottom):
-    # application = app.wsgifunc()  # Activate this line in PythonAnywhere!
-8. Remove the leading # and space (so the 'a' will be in the first column)
-9. Press the green "SAVE" button (upper right)
-10. Press the "DASHBOARD" link (upper right)
-11. Click CONSOLES
-12. Kill all active consoles (under YOUR CONSOLES:)
-13. Click Bash
+    USERNAME = dshoham@carzumer.com  /  PASSWORD = carzumer
+3. Click FILES (top left)
+4. Upload the file "Prototype.zip" from the main directory
+5. Press the "DASHBOARD" link (upper right)
+6. Click CONSOLES
+7. Kill all active consoles (under YOUR CONSOLES:)
+8. Click Bash
      A console will open with a ~ $ prompt.
-14. Type: "unzip filename.zip"
+9. Type: "unzip filename.zip"
      A long series of "inflating: ... " lines will appear
      If you are asked "replace [something]? respond "A" (for All)
-15. Type "Python Prototype_Main.py"
+10. Type "Python Prototype_Main.py"
     This will start the service and print out various SQL code
-16. Click "DASHBOARD" (again)
-17. Click WEB
-18. Press the big green button "RELOAD"
-19. This should do it!
+11. Click "DASHBOARD" (again)
+12. Click WEB
+13. Press the big green button "RELOAD".  This should do it!
+14. Go to danshoham.pythonanywhere.com to see it live
 
 """
 
@@ -194,6 +189,20 @@ def fixZero(v, fix=""):
         return v
 
 
+def float0(s):
+    if (s == "") or (s == None) or (s == "#N/A") or (s == "."):
+        return 0
+    else:
+        try:
+            return max(0, float(s))
+        except ValueError:
+            return 0
+        except:
+            print "Unexpected Error in float0:"
+            print "s = " + str(s)
+            raise
+
+
 def strRound(v, multiple=1, minimum=0, maximum=1000000):
     # Returns a string value of v rounded to nearest (integer) multiple
     # This function is used when guesses are made.  Since consumer selections
@@ -240,11 +249,13 @@ class byZIP (object):
     #   Latitude, Longitude -- Geodesic coordinates of the zip code (used to
     #                          compute distances from dealers to consumers)
     #   TaxRate -- Sales tax rate in effect
+    #   TradeInTaxCredit -- 1 for states that give Sales Tax Credit for Trade-
+    #                       In's, 0 for states that do not
     def __init__(self):
         MyDB = sqlite3.connect(FnameDB)
         cur = MyDB.cursor()
         MyScript = """SELECT ZIP, Income, state, ST2Offset, FICO3,
-                          Latitude, Longitude, Tax
+                          Latitude, Longitude, SalesTax, TradeInTaxCredit
                       FROM ZipLatLon;"""
         cur.execute(MyScript)
         Results = cur.fetchall()
@@ -257,14 +268,16 @@ class byZIP (object):
         self.Latitude = {}
         self.Longitude = {}
         self.TaxRate = {}
+        self.TradeInTaxCredit = {}
         for row in Results:
-            self.Income.update({row[0]: float(row[1])/12})
+            self.Income.update({row[0]: float0(row[1])/12})
             self.ST2.update({row[0]: row[2]})
-            self.ST2offset.update({row[0]: float(row[3])})
+            self.ST2offset.update({row[0]: float0(row[3])})
             self.FICO3.update({row[0]: row[4]})
             self.Latitude.update({row[0]: row[5]})
             self.Longitude.update({row[0]: row[6]})
             self.TaxRate.update({row[0]: row[7]})
+            self.TradeInTaxCredit.update({row[0]: row[8]})
 
 
 class APRTable (object):
@@ -475,8 +488,8 @@ class UserField (object):
 
     def UpdateField(self, PostedValue, FoundFocus, AvailFocus):
         # Will update a field based on posted information from web user
-        # If nothing was posted (PostedValue == "") then the field is
-        #   designated a Guess (to be 'guessed' later in the code)
+        # If nothing was posted (PostedValue == "") then the field retains
+        #   it's prior value and guess status.
         # Otherwise, the PostedValue is stored as the Field Value
         # There is logic to determine where the input focus should be next
         # It should be on the first un-entered (isGuess = True) field
@@ -487,15 +500,13 @@ class UserField (object):
         #   (foundfocus = True) making the focus ready to be assigned to the
         #   next unfilled field.  Both Booleans are updated and returned along
         #   with the updated field
-        NewisGuess = (PostedValue == "")
-        self.isFocus = FoundFocus and AvailFocus and NewisGuess
+        Blank = (PostedValue == "")
+        self.isFocus = FoundFocus and AvailFocus and Blank
         AvailFocus = AvailFocus and not(self.isFocus)
-        Entered = (self.isGuess) and not(NewisGuess)
-        Cleared = not(self.isGuess) and (NewisGuess)
-        Changed = (self.Value != PostedValue) and not(self.isGuess) and not(NewisGuess)
-        FoundFocus = FoundFocus or Entered or Cleared or Changed
-        self.Value = PostedValue
-        self.isGuess = NewisGuess
+        FoundFocus = FoundFocus or not(Blank)
+        if not(Blank):
+            self.Value = PostedValue
+            self.isGuess = False
         return (self, FoundFocus, AvailFocus)
 
 
@@ -538,6 +549,8 @@ class ConsumerInfo (object):
     #                           (used to compute transport distance and costs)
     #   TaxRate     -- The applicable Sales Tax rate at the consumer's zip
     #                           (computed from zip code; never entered)
+    #   TradeInTaxCredit -- =1 for states that give sales tax credit for Trade-
+    #                       in, =0 elsewhere (from zip, never entered)
     Fico = UserField("FICO Score")
     Income = UserField("Monthly Gross Income")
     DebtService = UserField("Monthly Expenses")
@@ -556,6 +569,7 @@ class ConsumerInfo (object):
     Latitude = UserField("Latitude")
     Longitude = UserField("Longitude")
     TaxRate = UserField("Sales Tax Rate")
+    TradeInTaxCredit = UserField("Sales Tax Credit for Trade-In")
 
     def __init__(self, OriginZip):
         # The process of creating a new member of the ConsumerInfo class
@@ -591,7 +605,8 @@ class ConsumerInfo (object):
             self.TermWant,
             self.Latitude,
             self.Longitude,
-            self.TaxRate
+            self.TaxRate,
+            self.TradeInTaxCredit
         )
 
 
@@ -615,9 +630,9 @@ class ConsumerInfo (object):
         # ------------------------------------------------
         #   Zip: Use global default (G_DefaultZip = 90650)
         #
-        #   Latitude, Longitude, TaxRate: Lookup table from Zip
-        #       (note: latitude, Longitude, and TaxRate get the same
-        #       isGuess status as zip)
+        #   Latitude, Longitude, TaxRate, TradeInTaxCredit: Lookup from Zip
+        #       (note: latitude, Longitude, TaxRate, TradeInTaxCredit get the
+        #       same isGuess status as zip)
         #
         #   Fico: If no actual Income was provided, lookup table from Zip
         #           If income is provided, apply income->fico model
@@ -775,6 +790,10 @@ class ConsumerInfo (object):
         self.TaxRate.Value = ZIPTable.TaxRate[self.Zip.Value]
         self.TaxRate.isGuess = self.Zip.isGuess
         self.TaxRate.GuessBasis = "Table lookup from Zip"
+
+        self.TradeInTaxCredit.Value = ZIPTable.TradeInTaxCredit[self.Zip.Value]
+        self.TradeInTaxCredit.isGuess = self.Zip.isGuess
+        self.TradeInTaxCredit.GuessBasis = "Table lookup from Zip"
 
 
         if self.Fico.isGuess:
@@ -1207,50 +1226,83 @@ def FetchFilteredInventory(FilterArray, MyConsumer, MyAPR):
         # Code to serach the inventory database for matching entries
         MyDB = sqlite3.connect(FnameDB)
         cur = MyDB.cursor()
+        MyDB.create_function("SQL_BestSellingPrice", 2, SQL_BestSellingPrice)
+        MyDB.create_function("SQL_BestInvoicePrice", 3, SQL_BestInvoicePrice)
         MyDB.create_function("SQL_Distance", 4, SQL_Distance)
-        MyDB.create_function("SQL_SalesTax", 3, SQL_SalesTax)
-        MyDB.create_function("SQL_Transport", 4, SQL_Transport)
-        MyDB.create_function("SQL_CashCost", 7, SQL_CashCost)
+        MyDB.create_function("SQL_SalesTax", 4, SQL_SalesTax)
+        MyDB.create_function("SQL_Transport", 1, SQL_Transport)
+        MyDB.create_function("SQL_CashCost", 3, SQL_CashCost)
         MyDB.create_function("SQL_FindAPR", 7, SQL_FindAPR)
         MyDB.create_function("SQL_FindMonthly", 7, SQL_FindMonthly)
         MyDB.create_function("SQL_FindDown", 7, SQL_FindDown)
 
-        MyScript1 = """ DROP TABLE IF EXISTS Inventory_Filtered1;
-                       CREATE TABLE Inventory_Filtered1 AS
-                       SELECT VIN, YEAR, MAKE, Model, Trim,
-                           Ext_Color_Generic AS Color,
-                           SellingPrice, DealerZip, Latitude, Longitude,
-                           Invoice, Make_STD, Model_STD,
-                           CAST(ABS(RANDOM() % 10000) AS TEXT) AS RandomNumber,
+        MyScript1 = """
+           DROP TABLE IF EXISTS Inventory_Filtered1;
+           CREATE TABLE Inventory_Filtered1 AS
+           SELECT I.*,
+           CashCost AS Down0,
+           0 AS Monthly0,
+           DownWant AS Down1,
+           SQL_FindMonthly(SellingPrice, Invoice, CashCost,
+                                           TradeIn, Payoff,
+                                           DownWant, Fico) AS Monthly1,
+           DownMax AS Down2,
+           SQL_FindMonthly(SellingPrice, Invoice, CashCost,
+                                           TradeIn, Payoff,
+                                           DownMax, Fico) AS Monthly2,
+           SQL_FindDown(SellingPrice, Invoice, CashCost,
+                                      TradeIn, Payoff,
+                                      MonthlyWant, Fico) AS Down3,
+           MonthlyWant AS Monthly3,
+           SQL_FindDown(SellingPrice, Invoice, CashCost,
+                                          TradeIn, Payoff,
+                                          MonthlyMax, Fico) AS Down4,
+           MonthlyMax AS Monthly4,
+           '0' as Down5,
+           SQL_FindMonthly(SellingPrice, Invoice, CashCost,
+                                           TradeIn, Payoff,
+                                           '0', Fico) AS Monthly5
+           FROM
+           (SELECT *,
+           SQL_Transport(DistanceMiles) AS TransportCost,
+           SQL_CashCost(BestSellingPrice, DistanceMiles, SalesTax) AS CashCost
 
-                           SQL_Distance(Latitude, Longitude, """ + \
-                           MyConsumer.Latitude.Value + ", " + \
-                           MyConsumer.Longitude.Value + """) AS DistanceMiles,
+           FROM
+           (SELECT *,
+           SQL_Distance(DealerLatitude, DealerLongitude,
+                ConsumerLatitude, ConsumerLongitude) AS DistanceMiles,
 
-                           SQL_Transport(Latitude, Longitude, """ + \
-                           MyConsumer.Latitude.Value + ", " + \
-                           MyConsumer.Longitude.Value + """) AS TransportCost,
+           SQL_SalesTax(BestSellingPrice, TaxRate,
+                TradeInValue, TradeInTaxCredit) AS SalesTax
 
-                           SQL_SalesTax(SellingPrice,
-                           Invoice, """ + \
-                           MyConsumer.TaxRate.Value + """) AS SalesTax,
+           FROM
+           (SELECT VIN, YEAR, MAKE, Model, Trim,
+           Year_STD, Make_STD, Model_STD, Trim_STD,
+           Ext_Color_Generic AS Color,
+           SellingPrice, Invoice,
+           CAST(ABS(RANDOM() % 10000) AS TEXT) AS RandomNumber,
+           DealerZip,
+           Latitude,
+           Longitude,
+           Latitude AS DealerLatitude,
+           Longitude AS DealerLongitude,
+           SQL_BestSellingPrice(SellingPrice, Invoice) AS BestSellingPrice,
+           """ + \
+           MyConsumer.Latitude.Value + " AS ConsumerLatitude, \n" + \
+           MyConsumer.Longitude.Value + " AS ConsumerLongitude, \n" + \
+           MyConsumer.TaxRate.Value + " AS TaxRate, \n\'" + \
+           MyConsumer.TradeInValue.Value + "\' AS TradeInValue, \n" + \
+           MyConsumer.TradeInTaxCredit.Value + " AS TradeInTaxCredit, \n\'" + \
+           MyConsumer.Fico.Value + "\' AS Fico, \n\'" + \
+           MyConsumer.UpfrontWant.Value + "\' AS DownWant, \n\'" + \
+           MyConsumer.UpfrontMax.Value + "\' AS DownMax, \n\'" + \
+           MyConsumer.MonthlyWant.Value + "\' AS MonthlyWant, \n\'" + \
+           MyConsumer.MonthlyMax.Value + "\' AS MonthlyMax, \n\'" + \
+           MyConsumer.TermWant.Value + "\' AS TermWant, \n\'" + \
+           MyConsumer.TradeInValue.Value + "\' AS TradeIn, \n\'" + \
+           MyConsumer.TradeInPayoff.Value + """\' AS Payoff
 
-                           SQL_CashCost(Latitude, Longitude, """ + \
-                           MyConsumer.Latitude.Value + ", " + \
-                           MyConsumer.Longitude.Value + """,
-                           SellingPrice,
-                           Invoice, """ + \
-                           MyConsumer.TaxRate.Value + ") AS CashCost, \'" + \
-                           MyConsumer.Fico.Value + "\' AS Fico, \'" + \
-                           MyConsumer.UpfrontWant.Value + "\' AS DownWant, \'" + \
-                           MyConsumer.UpfrontMax.Value + "\' AS DownMax, \'" + \
-                           MyConsumer.MonthlyWant.Value + "\' AS MonthlyWant, \'" + \
-                           MyConsumer.MonthlyMax.Value + "\' AS MonthlyMax, \'" + \
-                           MyConsumer.TermWant.Value + "\' AS TermWant, \'" + \
-                           MyConsumer.TradeInValue.Value + "\' AS TradeIn, \'" + \
-                           MyConsumer.TradeInPayoff.Value + """\' AS Payoff
-
-                       FROM Inventory_STD AS I\n """
+           FROM Inventory_STD))) AS I\n """
 
         HardFilter =   MakeFilterSQLTable(cur, FilterArray,
                            "Year_Filter", "Year_In", "Year_STD", "1Year") + \
@@ -1261,52 +1313,13 @@ def FetchFilteredInventory(FilterArray, MyConsumer, MyAPR):
                        MakeFilterSQLTable(cur, FilterArray,
                            "Trim_Filter", "Trim_In", "Trim_STD", "4Trim") + \
                        MakeFilterSQLTable(cur, FilterArray,
-                           "Color_Filter", "Color_In", "Ext_Color_Generic", "5Color")
+                           "Color_Filter", "Color_In", "Color", "5Color")
 
-        HardOrder =   " ORDER BY CashCost ASC LIMIT 25; "
+        SoftFilter = " WHERE Down4 <= DownMax \n "
 
-        SoftOrder =   " ORDER BY RandomNumber LIMIT 25; "
+        HardOrder =   " \n ORDER BY CashCost ASC LIMIT 25; \n"
 
-        MyScript2A = """ DROP TABLE IF EXISTS Inventory_Filtered2;
-                       CREATE TABLE Inventory_Filtered2 AS
-                       SELECT *,
-                           CashCost AS Down0,
-                           '0' AS Monthly0,
-
-                           DownWant AS Down1,
-                           SQL_FindMonthly(SellingPrice, Invoice, CashCost,
-                                           TradeIn, Payoff,
-                                           DownWant, Fico) AS Monthly1,
-                        """
-        if (MyConsumer.UpfrontWant.Value != MyConsumer.UpfrontMax.Value):
-            MyScript2B = """ DownMax AS Down2,
-                           SQL_FindMonthly(SellingPrice, Invoice, CashCost,
-                                           TradeIn, Payoff,
-                                           DownMax, Fico) AS Monthly2, """
-        else:
-            MyScript2B = """ '' AS Down2,
-                           '' AS Monthly2, """
-
-        MyScript2C = """ SQL_FindDown(SellingPrice, Invoice, CashCost,
-                                      TradeIn, Payoff,
-                                      MonthlyWant, Fico) AS Down3,
-                           MonthlyWant AS Monthly3,
-                     """
-        if (MyConsumer.MonthlyWant.Value != MyConsumer.MonthlyMax.Value):
-            MyScript2D = """ SQL_FindDown(SellingPrice, Invoice, CashCost,
-                                          TradeIn, Payoff,
-                                          MonthlyMax, Fico) AS Down4,
-                           MonthlyMax AS Monthly4, """
-        else:
-            MyScript2D = """ '' AS Down4,
-                           '' AS Monthly4, """
-
-        MyScript2E = """ '0' as Down5,
-                           SQL_FindMonthly(SellingPrice, Invoice, CashCost,
-                                           TradeIn, Payoff,
-                                           '0', Fico) AS Monthly5
-
-                       FROM Inventory_Filtered1; """
+        SoftOrder =   " \n ORDER BY RandomNumber LIMIT 25; \n "
 
         HardDestination = """ DROP TABLE IF EXISTS Inventory_Hard;
                            CREATE TABLE Inventory_Hard AS """
@@ -1314,7 +1327,7 @@ def FetchFilteredInventory(FilterArray, MyConsumer, MyAPR):
         SoftDestination = """ DROP TABLE IF EXISTS Inventory_Soft;
                            CREATE TABLE Inventory_Soft AS """
 
-        MyScript3 = """ SELECT *,
+        MyScript2 = """ SELECT *,
                            '' as APR0,
                            SQL_FindAPR(SellingPrice, Invoice, CashCost,
                                        TradeIn, Payoff, Down1, Fico) AS APR1,
@@ -1327,18 +1340,16 @@ def FetchFilteredInventory(FilterArray, MyConsumer, MyAPR):
                            SQL_FindAPR(SellingPrice, Invoice, CashCost,
                                        TradeIn, Payoff, Down5, Fico) AS APR5
 
-                       FROM Inventory_Filtered2 """
-
-        MyScript2 = MyScript2A + MyScript2B + MyScript2C + MyScript2D + MyScript2E
+                       FROM Inventory_Filtered1 """
 
         HardFilterScript = MyScript1 + HardFilter + HardOrder + \
-                            MyScript2 + HardDestination + MyScript3 + HardOrder
+                             HardDestination + MyScript2 + HardOrder
 
-        SoftFilterScript = MyScript1 + SoftOrder + \
-                            MyScript2 + SoftDestination + MyScript3 + SoftOrder
+        SoftFilterScript = MyScript1 + SoftFilter + SoftOrder + \
+                            SoftDestination + MyScript2 + SoftOrder
 
-        # print "HardFilterScript = "
-        # print HardFilterScript
+        print "HardFilterScript = "
+        print HardFilterScript
 
         # print "SoftFilterScript = "
         # print SoftFilterScript
@@ -1411,13 +1422,13 @@ def SQL_Distance(slat1, slon1, slat2, slon2):
         raise
 
 
-def SQL_SalesTax(sSellingPrice, sInvoice, sTaxRate):
-    # Find the actual ($ amount) of sales tax on a prospective transaction
-    # Logic: SalesTax = TaxRate * SellingPrice
-    #       If SellingPRice is missing, use Invoice
+def SQL_BestSellingPrice(sSellingPrice, sInvoice):
+    # Data Cleaning process to ascertain the vehcile selling price
+    # Logic: If SellingPrice is clean and >0, use it
+    #       Else, if Invoice is clean, use it,
+    #       Else, use "0" (for lack of a better alternative)
     try:
-        Results = float(fixNull(sTaxRate, 0)) * \
-                  float(fixZero(sSellingPrice, fixZero(sInvoice, 0)))
+        Results = float(fixZero(sSellingPrice, fixZero(sInvoice, 0)))
         return str(int(round(Results)))
     except ValueError:
         return ""
@@ -1425,20 +1436,59 @@ def SQL_SalesTax(sSellingPrice, sInvoice, sTaxRate):
         print "Unexpected error in SQL_SalesTax:"
         print "sSellingPrice = " + str(sSellingPrice)
         print "sInvoice = " + str(sInvoice)
-        print "sTaxRate = " + str(sTaxRate)
         raise
 
 
-def SQL_Transport(slat1, slon1, slat2, slon2):
+def SQL_BestInvoicePrice(sSellingPrice, sInvoice, iCashCost):
+    # Data Cleaning process to ascertain the vehcile Invoice price
+    # Logic: If Inmvoice is clean and >0, use it
+    #       Else, if SellingPrice is clean, use it,
+    #       Else, use CashCost (for lack of a better alternative)
+    try:
+        Results = float(fixZero(sInvoice, fixZero(sSellingPrice, iCashCost)))
+        return str(int(round(Results)))
+    except ValueError:
+        return ""
+    except:
+        print "Unexpected error in SQL_SalesTax:"
+        print "sSellingPrice = " + str(sSellingPrice)
+        print "sInvoice = " + str(sInvoice)
+        print "iCashCost = " + str(iCashCost)
+        raise
+
+
+def SQL_SalesTax(sBestSellingPrice, sTaxRate, sTradeIn, sTradeInCredit):
+    # Find the actual ($ amount) of sales tax on a prospective transaction
+    # In some states, the sales tax applies the the entire selling price,
+    #   whereas in others, it only applies to the difference between the
+    #   purchase price of the new vehicle and Trade-in value
+    #   The parameter sTradeInCredit is 0 for the former and 1 for the latter
+    # Logic: SalesTax = TaxRate * (SellingPrice - TradeIn * TradeInCredit)
+    #           (SalesTax is never negative)
+    try:
+        Results = max( 0, float0(sTaxRate) * \
+                  (float0(sBestSellingPrice) - \
+                   float0(sTradeIn) * float0(sTradeInCredit) ) )
+        return str(int(round(Results)))
+    except ValueError:
+        return "0"
+    except:
+        print "Unexpected error in SQL_SalesTax:"
+        print "sBestSellingPrice = " + str(sBestSellingPrice)
+        print "sTaxRate = " + str(sTaxRate)
+        print "sTradeIn = " + str(sTradeIn)
+        print "sTradeInCredit = " + str(sTradeInCredit)
+        raise
+
+
+def SQL_Transport(sDistance):
     # Find the cost of transporting a vehicle between two pairs of coords
-    # Logic: Use the SQL_Distance() function to find distance in Miles
-    #        Apply Transport Cost Model to find $ cost as function of distance
+    # Logic: Apply Transport Cost Model to find $ cost as function of distance
     #        Transport Cost Model uses two seperate straight-line fits:
     #        A short distance fit (under 600 miles) and a long distance one
     #        Global variables supply the intercept and slope for each fit
-    sDistance = SQL_Distance(slat1, slon1, slat2, slon2)
     try:
-        Distance = float(sDistance)
+        Distance = float0(sDistance)
         if Distance < G_ShippingBreakPoint:
             Results = G_ShippingLowIntercept + G_ShippingLowSlope * Distance
         else:
@@ -1448,36 +1498,28 @@ def SQL_Transport(slat1, slon1, slat2, slon2):
         return ""
     except:
         print "Unexpected error in SQL_Transport:"
-        print "slat1 = " + str(slat1)
-        print "slon1 = " + str(slon1)
-        print "slat2 = " + str(slat2)
-        print "slon2 = " + str(slon2)
+        print "sDistance = " + str(sDistance)
         raise
 
 
-def SQL_CashCost(slat1, slon1, slat2, slon2, sSellingPrice, sInvoice, sTaxRate):
+def SQL_CashCost(sBestSellingPrice, sDistance, sTax):
     # Find the Cash Cost of a vehicle
     # Logic: CashCost = SellingPrice + Transport + SalesTax
     #       Transport is computed using SQL_Transport() from coords
     #       SalesTax is computed using SQL_SalesTax() from price, tradeIn, Rate
     try:
-        TransportCost = float(fixZero(SQL_Transport(slat1, slon1, slat2, slon2),
-                                      G_ShippingMissing))
-        SalesTax = float(fixZero(SQL_SalesTax(sSellingPrice, sInvoice, sTaxRate), 0))
-        SellingPrice = float(fixZero(sSellingPrice, fixZero(sInvoice, 0)))
+        TransportCost = float0(fixZero(SQL_Transport(sDistance), G_ShippingMissing))
+        SalesTax = float0(sTax)
+        SellingPrice = float0(sBestSellingPrice)
         Results = SellingPrice + TransportCost + SalesTax
         return int(round(Results))
     except ValueError:
         return 0
     except:
         print "Unexpected error in SQL_CashCost:"
-        print "slat1 = " + str(slat1)
-        print "slon1 = " + str(slon1)
-        print "slat2 = " + str(slat2)
-        print "slon2 = " + str(slon2)
-        print "sSellingPrice = " + str(sSellingPrice)
-        print "sInvoice = " + str(sInvoice)
-        print "sTaxRate = " + str(sTaxRate)
+        print "sBestSellingPrice = " + str(sBestSellingPrice)
+        print "sDistance = " + str(sDistance)
+        print "sTax = " + str(sTax)
         raise
 
 
@@ -1645,3 +1687,4 @@ render = web.template.render('templates/',
 
 if __name__ == "__main__":
     app.run()
+
