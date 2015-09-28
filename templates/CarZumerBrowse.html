@@ -14,6 +14,10 @@ $code:
 		if sNumber == "": return 0
 		return float(sNumber)
 
+	def len0(sText):
+		if (sText == None) or (str(sText) == ""): return 0
+		return len(str(sText))
+		
 	DownWant = float0(X.UpfrontWant.Value)
 	DownMax = float0(X.UpfrontMax.Value)
 	MonthlyWant = float0(X.MonthlyWant.Value)
@@ -21,14 +25,15 @@ $code:
 	
 	SalesTaxRate = float0(X.TaxRate.Value) * 100
 	
-	Deals5 = [
-				('Down0', 'Monthly0', 'APR0', 'Deal0'),
-				('Down1', 'Monthly1', 'APR1', 'Deal1'),
-				('Down2', 'Monthly2', 'APR2', 'Deal2'),
-				('Down3', 'Monthly3', 'APR3', 'Deal3'),
-				('Down4', 'Monthly4', 'APR4', 'Deal4'),
-				('Down5', 'Monthly5', 'APR5', 'Deal5')
-			]
+	Deals5 = [('Down0', 'Monthly0', 'APR0', 'Deal0'),
+			  ('Down1', 'Monthly1', 'APR1', 'Deal1')]
+	if (DownWant != DownMax):
+		Deals5 += [('Down2', 'Monthly2', 'APR2', 'Deal2')]
+	Deals5 += [('Down3', 'Monthly3', 'APR3', 'Deal3')]
+	if (MonthlyWant != MonthlyMax):
+		Deals5 += [('Down4', 'Monthly4', 'APR4', 'Deal4')]
+	Deals5 += [('Down5', 'Monthly5', 'APR5', 'Deal5') ]
+	
 	ListDetails = ['Color', 'DistanceMiles', 'VIN']
 	ModalDetails = ['VIN', 'YEAR', 'MAKE', 'Model', 'Trim', 'Color',
 					'DealerZip', 'DistanceMiles', 'TransportCost', 
@@ -62,6 +67,7 @@ $code:
 		$X.Latitude <br/>
 		$X.Longitude <br/>
 		$X.TaxRate <br/>
+		$X.TradeInTaxCredit <br/>
 		<hr>
 		<h2> Checked Filters </h2>
 		$for OneFilter in WebSort(MyFilters.Filter):
@@ -120,7 +126,15 @@ $code:
 						<a href="#" class="btn btn-info" role="button" data-toggle="modal" data-target="#$RR">$VV</a>
 					$elif RR == "Radio":
 						<div class="row" >
-							<div class="col-md-8" align="right" >
+							<div class="col-md-2" align="right">
+								<!--
+								$if XX.isGuess:
+									<span class="glyphicon glyphicon-question-sign"></span>
+								$else:
+									<span class="glyphicon glyphicon-ok"></span>
+								-->
+							</div>
+							<div class="col-md-6" align="right" >
 								<h5><b>$XX.Label</b></h5></div>
 							<div class="col-md-4"><div class="radio">
 								<label><input type="radio" name="$VV" value="Y" onchange="this.form.submit()"
@@ -132,15 +146,23 @@ $code:
 										Checked
 									>No   </label>
 							</div></div>
-						</div>						
-					$elif XX.isGuess:
-						<input type="text" class="form-control" name="$VV" onchange="this.form.submit()"
-							$if RR != "":
-								style=" border: 3px $RR solid;"
-							$if XX.isFocus:
-								autofocus
-							placeholder = "$XX.Label ($XX.Value)">
+						</div>
+					$elif XX.isGuess and False:
+						<div class="row" >
+							<div class="col-md-2" align="right">
+								<span class="glyphicon glyphicon-question-sign"></span>
+							</div>
+							<div class="col-md-10" align="right" >
+								<input type="text" class="form-control" name="$VV" onchange="this.form.submit()"
+									$if RR != "":
+										style=" border: 3px $RR solid;"
+									$if XX.isFocus:
+										autofocus
+									placeholder = "$XX.Label ($XX.Value)">
+							</div>
+						</div>
 					$else:
+						<!--
 						<div class="row" >
 							<div class="col-md-8" align="right" >
 								<h5><b>$XX.Label</b></h5></div>
@@ -148,7 +170,24 @@ $code:
 								<input type="text" class="form-control" name="$VV" onchange="this.form.submit()"
 									style=" background-color: Lime;" value = "$XX.Value">
 							</div>
-						</div>		  
+						</div>
+						-->
+						<div class="row" >
+							<div class="col-md-2" align="right">
+								$if XX.isGuess:
+									<span class="glyphicon glyphicon-question-sign"></span>
+								$else:
+									<span class="glyphicon glyphicon-ok"></span>
+							</div>
+							<div class="col-md-10" align="right" >
+								<input type="text" class="form-control" name="$VV" onchange="this.form.submit()"
+									$if RR != "":
+										style=" border: 3px $RR solid;"
+									$if XX.isFocus:
+										autofocus
+									placeholder = "${XX.Label}: $XX.Value">
+							</div>
+						</div>
 			</div>			
 			
 			<button type="submit" class="btn btn-default">Submit</button>
@@ -165,7 +204,28 @@ $code:
 						<h2 class="modal-title" id="myModalLabel">SCORE ME NOW</h2>
 					</div>
 					<div class="modal-body">
-						<h4> Interactive display to generate a soft credit bureau hit and populate the FICO field </h4>
+						<h4> To help you find vehicles you can afford to finance, we can find your credit score for you </h4>
+						<hr>
+						<input type="text" class="form-control" placeholder="Legal First Name">
+						<input type="text" class="form-control" placeholder="Legal Last Name">
+						<input type="text" class="form-control" placeholder="Other Last Name(s) Used">
+						<input type="text" class="form-control" placeholder="Street Address">
+						<input type="text" class="form-control" placeholder="Zip Code">
+						<input type="text" class="form-control" placeholder="SSN [UNSECURED PROTOTYPE! -- DO NOT ENTER ANY ACTUAL SSN]">
+						<div class="row">
+							<div class="col-md-2" align="right">
+								<input type="checkbox">
+							</div>
+							<div class="col-md-10" align="left" >
+								<h5><em>I Authorize CarZumer to Obtain an Informational Credit Report (Soft Hit).
+									I understand that doing so does not constitute an application for credit and
+									will not impact my credit score.  I also understand
+									that once I do apply for an actual loan, a credit inquiry (Hard Hit) will be
+									obtained and -- whether or not an actual loan is originated -- the inquiry will
+									be recorded on my credit report and may affect my credit score.
+								</em></h5>
+							</div>
+						</div>
 					</div><!-- /.modal-body -->
 				</div><!-- /.modal-content -->
 			</div><!-- /.modal-dialog -->
@@ -180,7 +240,54 @@ $code:
 						<h2 class="modal-title" id="myModalLabel">VALUE MY TRADE-IN</h2>
 					</div>
 					<div class="modal-body">
-						<h4> Interactive display to generate a Trade-In valuation and populate the TradeInValue field </h4>
+						<h4> To help you find vehicles you can afford, we can help estimate the value of your trade-in </h4>
+						<hr>
+						<input type="text" class="form-control" placeholder="VIN">
+						<input type="text" class="form-control" placeholder="Make">
+						<input type="text" class="form-control" placeholder="Model">
+						<input type="text" class="form-control" placeholder="Trim">
+						<input type="text" class="form-control" placeholder="Year">
+						<input type="text" class="form-control" placeholder="Miles">
+						<div class="row" >
+							<div class="col-md-3" align="right" >
+								<h5><b>Condition</b></h5></div>
+							<div class="col-md-9"><div class="radio">
+								<label><input type="radio"><abbr title="Like New in appearance and mechanically">Excellent</abbr></label>
+								<label><input type="radio" Checked><abbr title="Unblemished appearance appropriate for age, no mechanical issues">Very Good</label>
+								<label><input type="radio" ><abbr title="Some modest appearance defects, no major mechanical issues">Good</abbr></label>
+								<label><input type="radio" ><abbr title="Significant appearance defects, significant mechanical issues">Fair</abbr></label>
+								<label><input type="radio" ><abbr title="Excessive wear and tear, requires extensive repairs">Poor</abbr></label>
+								<label><input type="radio" ><abbr title="Not economically repairable, spare parts only">Inoperable</abbr></label>
+							</div></div>
+						</div>
+						<div class="row" >
+							<div class="col-md-3" align="right" >
+								<h5><b>Accidents</b></h5></div>
+							<div class="col-md-9"><div class="radio">
+								<label><input type="radio" Checked>None</label>
+								<label><input type="radio">Minor</label>
+								<label><input type="radio">Frame Damage</label>
+							</div></div>
+						</div>
+						<div class="row" >
+							<div class="col-md-3" align="right" >
+								<h5><b>Title</b></h5></div>
+							<div class="col-md-9"><div class="radio">
+								<label><input type="radio" Checked>Clear</label>
+								<label><input type="radio">Salvage</label>
+							</div></div>
+						</div>
+						<div class="row">
+							<div class="col-md-2" align="right">
+								<input type="checkbox">
+							</div>
+							<div class="col-md-10" align="left" >
+								<h5><em>I Authorize CarZumer to Obtain a Vehicle Report.
+									I understand that valuation produced here are good faith estimates
+									and that the actual trade-in value of my vehicle may be different.
+								</em></h5>
+							</div>
+						</div>
 					</div><!-- /.modal-body -->
 				</div><!-- /.modal-content -->
 			</div><!-- /.modal-dialog -->
@@ -410,12 +517,15 @@ $code:
 																					<div class="col-md-12" style="border: 1px #e4e4e4 solid">																				
 																						<h5>Selling Price: $$$SellingPrice </h5>
 																						<h5> + Transport Cost: $$$TransportCost ($TransportMiles miles) </h5>
-																						<h5> + Sales Tax: $$$SalesTax (${SalesTaxRate}%) </h5>
+																						<h5> + Sales Tax: $$$SalesTax (${SalesTaxRate}% of Selling Price
+																						$if (X.TradeInTaxCredit.Value == "1"):
+																							&nbsp;Less Trade-In Value
+																						) </h5>
 																						<hr>
 																						<h5> Total Cash Cost: $$$CashCost </h5>
 																						<hr>
-																						<h5> - TradeIn Value: $$$TradeIn </h5>
-																						<h5> + TradeIn Payoff: $$$Payoff  </h5>
+																						<h5> - Trade-In Value: $$$TradeIn </h5>
+																						<h5> + Trade-In Payoff: $$$Payoff  </h5>
 																						<hr>
 																						<h5> Cash Required: $$$CashBuy  </h5>
 																					</div>
@@ -425,7 +535,10 @@ $code:
 																					<div class="col-md-6" style="border: 1px #e4e4e4 solid">																				
 																						<h5>Selling Price: $$$SellingPrice </h5>
 																						<h5> + Transport Cost: $$$TransportCost ($TransportMiles miles) </h5>
-																						<h5> + Sales Tax: $$$SalesTax (${SalesTaxRate}%) </h5>
+																						<h5> + Sales Tax: $$$SalesTax (${SalesTaxRate}% of Selling Price
+																						$if (X.TradeInTaxCredit.Value == "1"):
+																							Less Trade-In Value
+																						) </h5>
 																						<hr>
 																						<h5> Total Cash Cost: $$$CashCost </h5>
 																					</div>
