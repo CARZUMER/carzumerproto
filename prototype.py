@@ -164,7 +164,7 @@ G_ShippingMissing = 500
 
 # Designate file location of database
 # -----------------------------------
-FnameDB = "static/PrototypeDB.db"
+FnameDB = "data/PrototypeDB.db"
 
 
 # Global Functions
