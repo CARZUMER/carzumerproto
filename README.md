@@ -12,21 +12,25 @@
     virtualenv env
     source env/bin/activate
 
-2.Install gunicorn:
+3.Install gunicorn:
 
     pip install gunicorn
 
-3.Install web.py
+4.Install web.py
 
     pip install web.py
 
-4.Install setptoctitle
+5.Install setptoctitle
 
     pip install setproctitle
 
-5.Install iPython if you like to make debugging easier
+6.Install iPython if you like to make debugging easier
     
     pip install ipython
+    
+7.Install Crypto lib
+
+    pip install pycrypto 
 
 
 #Other configuration:
