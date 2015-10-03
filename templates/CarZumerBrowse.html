@@ -15,8 +15,10 @@ $code:
 		return float(sNumber)
 
 	def len0(sText):
-		if (sText == None) or (str(sText) == ""): return 0
-		return len(str(sText))
+		if (sText == None) or (sText == ""):
+			return 0
+		else:
+			return len(sText)
 		
 	DownWant = float0(X.UpfrontWant.Value)
 	DownMax = float0(X.UpfrontMax.Value)
@@ -38,9 +40,11 @@ $code:
 	ModalDetails = ['VIN', 'YEAR', 'MAKE', 'Model', 'Trim', 'Color',
 					'DealerZip', 'DistanceMiles', 'TransportCost', 
 					'SellingPrice', 'SalesTax', 'CashCost', 'Invoice']
-
+		
 <form action="/" method="POST" role="form" class="form-horizontal">
 
+	<input type="hidden" name="SessionID"  value="$X.ConsumerID">
+  
 <!-- ************************************************************************ -->
 <!-- Put details of incoming data fields into this collapsable zone           -->
 <!--       Used mainly for debugging and code development, but also deoms	  -->
@@ -48,6 +52,16 @@ $code:
 <div class="container">
 	<a href="#ValuesNow" class="btn btn-info" data-toggle="collapse">See How Defaults Are Computed</a>
 	<div id="ValuesNow" class="collapse">
+		<a data-toggle="modal" href="#LoginModal">Log In</a>
+		<h2> Consumer Record </h2>
+		<h4>Message: &nbsp; $X.Message </h4>
+		<h4>username: &nbsp; $X.username </h4>
+		<h4>ConsumerID: &nbsp; $X.ConsumerID </h4>
+		<h4>CreateTime: &nbsp; $X.CreateTime </h4>
+		<h4>CreateTimeStamp: &nbsp; $X.CreateTimeStamp </h4>
+		<h4>LastAccessed: &nbsp; $X.LastAccessed </h4>
+		<h4>LastAccessedTimeStamp: &nbsp; $X.LastAccessedTimeStamp </h4>
+		<hr>
 		<h2> Consumer Details </h2>
 		$X.Zip <br/>
 		$X.Fico <br/>
@@ -91,37 +105,43 @@ $code:
 		<!-- The next section provides an interactive data entry / guess disclosure   -->
 		<!--    of consumer details ("Your Budget," "Your Credit," and "Your TradeIn" -->
 		<!-- ************************************************************************ -->
-		<div class="col-md-4" style="border: 1px #e4e4e4 solid">
+		<div class="col-md-4" >
 			
 			<div class="form-group">
 			
 				$code:
 					XV = [	
-							(X.Zip,			"Zip", 			"Red"),
-							("Header",		"Your Budget",	""),
-							(X.UpfrontWant,	"UpfrontWant",	""),
-							(X.UpfrontMax,	"UpfrontMax",	""),
-							(X.MonthlyWant,	"MonthlyWant",	""),
-							(X.MonthlyMax,	"MonthlyMax",	""),
-							(X.TermWant,	"TermWant",		""), 
-							("Header",		"Your Credit",	""),
-							("Button",		"Score Me Now",	"ScoreModal"),
-							(X.Fico,		"Fico",			""),
-							(X.Income,		"Income",		""),
-							(X.DebtService,	"DebtService",	""),
-							(X.isHomeowner,	"isHomeowner",	"Radio"),
-							(X.isCosigner,	"isCosigner",	"Radio"),
-							(X.Cosigner,	"Cosigner",		""),
-							("Header",		"Your Trade-In",""),
-							(X.isTradeIn,	"isTradeIn",	"Radio"),
-							("Button",		"Price my Trade-In","TradeInModal"),
-							(X.TradeInValue,"TradeInValue",	""),
-							(X.TradeInPayoff,"TradeInPayoff","")
+							(X.Zip,			"Zip", 			"Red",	""),
+							("Header",		"Your Budget",	"",	""),
+							(X.UpfrontWant,	"UpfrontWant",	"",	""),
+							(X.UpfrontMax,	"UpfrontMax",	"",	""),
+							(X.MonthlyWant,	"MonthlyWant",	"",	""),
+							(X.MonthlyMax,	"MonthlyMax",	"",	""),
+							(X.TermWant,	"TermWant",		"",	""), 
+							("Header",		"Your Credit",	"Check My Rate",	"ScoreModal"),
+							(X.Fico,		"Fico",			"",	""),
+							(X.Income,		"Income",		"",	""),
+							(X.DebtService,	"DebtService",	"",	""),
+							(X.isHomeowner,	"isHomeowner",	"Radio",	""),
+							(X.isCosigner,	"isCosigner",	"Radio",	""),
+							(X.Cosigner,	"Cosigner",		"",	""),
+							("Header",		"Your Trade-In","Value My Trade","TradeInModal"),
+							(X.isTradeIn,	"isTradeIn",	"Radio",	""),
+							(X.TradeInValue,"TradeInValue",	"",	""),
+							(X.TradeInPayoff,"TradeInPayoff","",	"")
 						]
 				
-				$for XX, VV, RR in XV:				
+				$for XX, VV, RR, R2 in XV:				
 					$if XX == "Header":
-						<h3>$VV</h3>
+						$if RR == "":
+							<h3>$VV</h3>
+						$else:
+							<div class="row" ><div class="col-md-11" >
+								<h3>$VV
+								<div class="pull-right">
+									<a href="#" class="btn btn-info" role="button" data-toggle="modal" data-target="#$R2">$RR</a>
+								</div></h3>
+							</div></div>
 					$elif XX == "Button":
 						<a href="#" class="btn btn-info" role="button" data-toggle="modal" data-target="#$RR">$VV</a>
 					$elif RR == "Radio":
@@ -175,12 +195,21 @@ $code:
 						<div class="row" >
 							<div class="col-md-2" align="right">
 								$if XX.isGuess:
-									<span class="glyphicon glyphicon-question-sign"></span>
+									<div onclick="QMClicked${VV}(this)">
+										<span class="glyphicon glyphicon-question-sign"></span>
+									</div>
+									<script>
+										function QMClicked${VV}(id) {
+											id.innerHTML = '<span class="glyphicon glyphicon-ok"></span>';
+											TextInput${VV}.value = "$XX.Value";
+										}
+									</script>
 								$else:
 									<span class="glyphicon glyphicon-ok"></span>
 							</div>
 							<div class="col-md-10" align="right" >
 								<input type="text" class="form-control" name="$VV" onchange="this.form.submit()"
+									id="TextInput$VV"
 									$if RR != "":
 										style=" border: 3px $RR solid;"
 									$if XX.isFocus:
@@ -190,8 +219,8 @@ $code:
 						</div>
 			</div>			
 			
-			<button type="submit" class="btn btn-default">Submit</button>
-			<button type="reset" class="btn btn-default">Reset</button>
+			<button type="submit" class="btn btn-default" name="SubmitButton" value="SubmitPressed" >Submit</button>
+			<button type="submit" class="btn btn-default" name="SubmitButton" value="ReStartPressed" >Start Over (logout)</button>
 		</div>
 		
 		
@@ -297,8 +326,8 @@ $code:
 		<!-- This section creates the 8 filter menues.  Each menu, when clicked,      -->
 		<!--       opens a modal with available checkboxes							  -->
 		<!-- ************************************************************************ -->	
-		<div class="col-md-8" style="border: 1px #e4e4e4 solid">
-			<div class="container" style="border: 1px #e4e4e4 solid">
+		<div class="col-md-8">
+			<div class="container">
 				<div class="row">
 					$for FilterName in WebSort(MyFilters.Filter):
 						<div class="col-md-1">
@@ -324,7 +353,7 @@ $code:
 											</div>
 											
 											<div class="modal-body">
-												<div class="col-md-12" style="border: 4px #e4e4e4 solid">
+												<div class="col-md-12">
 													<div class="row">
 														$for AvailableChoice in WebSort(MyFilters.Filter[FilterName].Choices.keys()):
 															<div class="col-md-3" 
@@ -378,7 +407,7 @@ $code:
 			<!-- This section provides curated selections: Two (now, later three) rows    -->
 			<!--       of available vehicles represented as thumbnails linked to modals   -->
 			<!-- ************************************************************************ -->	
-			<div class="container" style="border: 1px #e4e4e4 solid">
+			<div class="container">
 				<h2>Curated Selections</h2>
 				$for (VehiclesRow, RowLabel) in [(MySelections.HardVehicles, "Your Selections"), (MySelections.SoftVehicles, "Additional Suggestions")]:
 					<div class="row">
@@ -402,7 +431,7 @@ $code:
 									CashCost = int(float0(OneVehicle.Properties['CashCost']))
 									CashBuy = CashCost - TradeIn + Payoff
 									
-									if len(OneVehicle.Properties['Make_STD'])>0 and len(OneVehicle.Properties['Model_STD'])>0:
+									if len0(OneVehicle.Properties['Make_STD'])>0 and len0(OneVehicle.Properties['Model_STD'])>0:
 										ImageFileName = ImagesDirectory + OneVehicle.Properties['Make_STD'] + "(" + OneVehicle.Properties['Model_STD'] + ").jpg"
 									else:
 										ImageFileName = ImagesDirectory + "carpic.jpg"
@@ -421,23 +450,23 @@ $code:
 											</div>
 											<div class="modal-body">
 												<div class="row">
-													<div class="col-md-8" style="border: 1px #e4e4e4 solid">
+													<div class="col-md-8">
 														<img src="$ImageFileName" style="width:375px; height:270px; border: 15px $BoxColor solid">
 													</div>
-													<div class="col-md-4" style="border: 1px #e4e4e4 solid">
+													<div class="col-md-4">
 														<h3>SPACE FOR MORE LATER</h3>
 														<hr>
 														<h5> To be filled with more later</h5>
 													</div>
 												</div>
 												<div class="row">
-													<div class="col-md-4" style="border: 1px #e4e4e4 solid">
+													<div class="col-md-4">
 														<h3>VEHICLE DETAILS</h3>
 														<hr>
 														$for OneProperty in ModalDetails:
 															<p><h6>${OneProperty}: $OneVehicle.Properties[OneProperty]</h6></p>
 													</div>
-													<div class="col-md-8" style="border: 1px #e4e4e4 solid">
+													<div class="col-md-8">
 														<div class="row">
 															<h3>BUY IT NOW</h3>
 														</div>
@@ -494,10 +523,10 @@ $code:
 																		</div>
 																		<div class="modal-body">
 																			<div class="row">
-																				<div class="col-md-8" style="border: 1px #e4e4e4 solid">
+																				<div class="col-md-8">
 																					<img src="$ImageFileName" style="width:375px; height:270px; border: 15px $BoxColor solid">
 																				</div>
-																				<div class="col-md-4" style="border: 1px #e4e4e4 solid">
+																				<div class="col-md-4">
 																					<h3>BUY IT NOW</h3>
 																					<hr>
 																					$if Dealx == "Deal0":
@@ -514,7 +543,7 @@ $code:
 																			</div>
 																			$if Dealx == "Deal0":
 																				<div class="row">
-																					<div class="col-md-12" style="border: 1px #e4e4e4 solid">																				
+																					<div class="col-md-12">																				
 																						<h5>Selling Price: $$$SellingPrice </h5>
 																						<h5> + Transport Cost: $$$TransportCost ($TransportMiles miles) </h5>
 																						<h5> + Sales Tax: $$$SalesTax (${SalesTaxRate}% of Selling Price
@@ -532,7 +561,7 @@ $code:
 																				</div>
 																			$else:
 																				<div class="row">
-																					<div class="col-md-6" style="border: 1px #e4e4e4 solid">																				
+																					<div class="col-md-6">																				
 																						<h5>Selling Price: $$$SellingPrice </h5>
 																						<h5> + Transport Cost: $$$TransportCost ($TransportMiles miles) </h5>
 																						<h5> + Sales Tax: $$$SalesTax (${SalesTaxRate}% of Selling Price
@@ -542,7 +571,7 @@ $code:
 																						<hr>
 																						<h5> Total Cash Cost: $$$CashCost </h5>
 																					</div>
-																					<div class="col-md-6" style="border: 1px #e4e4e4 solid">
+																					<div class="col-md-6">
 																						<h5> Cash Down Payment: $$$CashDownPayment </h5>
 																						<h5> + TradeIn Value: $$$TradeIn </h5>
 																						<h5> - TradeIn Payoff: $$$Payoff  </h5>
@@ -551,27 +580,27 @@ $code:
 																					</div>
 																				</div>
 																				<div class="row">
-																					<div class="col-md-12" style="border: 1px #e4e4e4 solid">
+																					<div class="col-md-12">
 																						<h5><bold> Loan Amount:  $$$LoanAmount </bold></h5>
 																					</div>
 																				</div>
 																				<div class="row">
-																					<div class="col-md-8" style="border: 1px #e4e4e4 solid">
+																					<div class="col-md-8">
 																						<h5> Invoice:  $$$InvoicePrice </h5>
 																						<h5> Advance:  ${Advance}%  ( = $$$LoanAmount / $$$InvoicePrice ) </h5>
 																					</div>
-																					<div class="col-md-2" style="border: 1px #e4e4e4 solid">
+																					<div class="col-md-2">
 																						<h5> Fico:  $OneVehicle.Properties['Fico'] </h5>
 																					</div>
-																					<div class="col-md-2" style="border: 1px #e4e4e4 solid">
+																					<div class="col-md-2">
 																						<h5> Term:  $OneVehicle.Properties['TermWant'] </h5>
 																					</div>
 																				</div>
 																				<div class="row">
-																					<div class="col-md-6" style="border: 1px #e4e4e4 solid">
+																					<div class="col-md-6">
 																						<h5> APR (from price grid) :${APR}% </h5>
 																					</div>
-																					<div class="col-md-6" style="border: 1px #e4e4e4 solid">
+																					<div class="col-md-6">
 																						<h5> Monthly Payment:  $$$OneVehicle.Properties[Monthlyx] </h5>
 																					</div>
 																				</div>																	
@@ -591,14 +620,7 @@ $code:
 								$for OneProperty in ListDetails:
 									<p><h6><small> ${OneProperty}: $OneVehicle.Properties[OneProperty]</small></h6></p>
 								<a href="#" class="btn btn-info btn-block" role="button" style="border: 1px black solid" 
-											data-toggle="modal" data-target="#myModal${VIN}" >
-									<div class="row"><font size="2px">
-										<div class="col-md-4">Buy</div>
-										<div class="col-md-8" style="border: 1px #e4e4e4 solid">
-											$$$CashBuy&nbsp;
-										</div>
-									</font></div>
-								</a>
+											data-toggle="modal" data-target="#myModal${VIN}" >$$$CashBuy</a>
 								<!-- Find the best finance deal possible  -->
 								<!-- 1st choice: Down=Want, Monthly<=Want -->
 								<!-- 2nd choice: Monthly=Want, Down<=Max  -->
@@ -632,14 +654,7 @@ $code:
 								
 								$if (Best <= 4):
 									<a href="#" class="btn btn-info btn-block text-left" role="button" style="border: 1px black solid"
-										data-toggle="modal" data-target="#myModal${VIN}" >
-										<div class="row"><font size="2px">
-											<div class="col-md-4">Buy</div>
-											<div class="col-md-8" style="border: 1px #e4e4e4 solid">
-												$$$BestMonthly/Month
-											</div>
-										</font></div>
-									</a>							
+										data-toggle="modal" data-target="#myModal${VIN}" >$$$BestMonthly/Month</a>							
 							</div>
 					</div> 
 			</div>
@@ -647,5 +662,72 @@ $code:
 	</div>
 </div>
 
+<!-- Login Modal -->
+<div class="modal fade" id="LoginModal" tabindex="-1" role="dialog" aria-labelledby="LoginModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+				<h2 class="modal-title" id="LoginModalLabel">Log in / Create Account</h2>
+			</div>
+			<div class="modal-body">
+				<div class="row" >
+					<div class="col-md-6">			
+						<div class="form-group">
+							<div class="row" >
+								<div class="col-md-12" align="right" >
+									<input type="text" class="form-control" name="Username" placeholder = "Username">
+								</div>
+								<div class="col-md-12" align="right" >
+									<input type="password" class="form-control" name="Password" placeholder = "Password">
+								</div>
+								<div class="col-md-12" align="right" >
+									<input type="password" class="form-control" name="VerifyPassword" placeholder = "(Optional) Verify Password">
+								</div>
+								<div class="col-md-12" align="right" >
+									<input type="text" class="form-control" name="Email" placeholder = "Email">
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6">			
+						<div class="form-group">
+							<input type="text" class="form-control" name="Optional1" placeholder = "Optional Field 1">
+							<input type="text" class="form-control" name="Optional2" placeholder = "Optional Field 2">
+							<input type="text" class="form-control" name="Optional3" placeholder = "Optional Field 3">
+							<input type="text" class="form-control" name="Optional4" placeholder = "Optional Field 4">
+						</div>
+					</div>
+				</div>
+				<div class="row" >
+					<button type="submit" class="btn btn-default" name="LogAttempt" value="Login" >Log In</button>
+					<button type="submit" class="btn btn-default" name="LogAttempt" value="Create" >Create Account</button>
+					<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+				</div>
+				<div class="row" >				
+					<h2> Consumer Record </h2>
+					<h4>ConsumerID: &nbsp; $X.ConsumerID </h4>
+					<h4>CreateTime: &nbsp; $X.CreateTime </h4>
+					<h4>CreateTimeStamp: &nbsp; $X.CreateTimeStamp </h4>
+					<h4>LastAccessed: &nbsp; $X.LastAccessed </h4>
+					<h4>LastAccessedTimeStamp: &nbsp; $X.LastAccessedTimeStamp </h4>
+					<hr>
+				</div>
+			</div><!-- /.modal-body -->
+		</div><!-- /.modal-content -->
+	</div><!-- /.modal-dialog -->
+</div><!-- /Login Modal -->
+
 
 </form>
+	
+$if X.username != "":
+	<script>
+		document.getElementById("LoggedInStatus").innerHTML = 'Logged in as $X.username &nbsp;';
+		document.getElementById("LogInOrOut").innerHTML = '<form action="/" method="POST" role="form"><button type="submit" class="btn btn-default" name="SubmitButton" value="ReStartPressed" >Logout</button></form>';
+	</script>
+
+$if X.Message != "":
+	<script>
+		document.getElementById("MessageToUser").innerHTML = '<h3>$X.Message</h3>';
+	</script>

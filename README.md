@@ -27,6 +27,10 @@
 5.Install iPython if you like to make debugging easier
     
     pip install ipython
+    
+6. Install Crypto lib
+
+    pip install pycrypto 
 
 
 #Other configuration:
